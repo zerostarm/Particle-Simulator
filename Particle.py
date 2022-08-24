@@ -24,6 +24,25 @@ class Particle:
         self.NewEnergy = Ke + Pe
         self.NewAcceleration = asarray(acceleration)
         
+        self.indices = np.asarray([[0,0,0],
+                                   [0,0,0],
+                                   [0,0,0],
+                                   [0,0,0],
+                                   [0,0,0],
+                                   [0,0,0],
+                                   [0,0,0],
+                                   [0,0,0]])
+        
+        self.weights = np.asarray([[0,0,0],
+                                   [0,0,0],
+                                   [0,0,0],
+                                   [0,0,0],
+                                   [0,0,0],
+                                   [0,0,0],
+                                   [0,0,0],
+                                   [0,0,0]])
+        
+        
     def setMass(self, mass):
         self.Mass = mass
         return True

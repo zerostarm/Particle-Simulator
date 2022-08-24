@@ -48,8 +48,8 @@ class Mesh:
         self.new_A = np.zeros_like(self.vector_mesh_0)
         self.new_V = np.zeros_like(self.scalar_mesh_0)
         
-        self.A_list = [self.A_field, self.new_A]
-        self.V_list = [self.V_field, self.new_V]
+        #self.A_list = [self.A_field, self.new_A]
+        #self.V_list = [self.V_field, self.new_V]
         
         self.E_list = [self.E_field, self.new_E]
         self.B_list = [self.B_field, self.new_B]
@@ -133,6 +133,9 @@ class Mesh:
             x, y, z = particle.getPosition()
             indices, weights = self.find_nearest_neighbors(x, y, z)
             
+            particle.indices = indices
+            particle.weights = weights
+            
             for i in range(len(indices)):
                 rho[indices[i,0], indices[i,1], indices[i,2]] += weights[i]*particle.getCharge()
                 for j in range(3):
@@ -177,32 +180,25 @@ class Mesh:
         self.new_A = A_next
         self.new_V = V_next
         
-        #self.A_list.append(A_next)
-        #self.V_list.append(V_next)
-        
-        E = self.get_E(V_next, self.A_list, self.dt)
+        E = self.get_E(V_next, self.dt)
         B = self.get_B(A_next)
         
         #self.E_list.append(E)
         #self.B_list.append(B)
         
-        self.rho_list.append(rho_new)
-        self.J_list.append(J_new)
+        #self.rho_list.append(rho_new)
+        #self.J_list.append(J_new)
         
         self.E_field = E
         self.B_field = B
         
         return E, B
         
-    def get_E(self, V, A_list, dt):
-    
-        #print(np.gradient(V))
-        #print(np.diff(A, axis=1))
+    def get_E(self, V, dt):
         
         grad_V = np.asarray(np.gradient(V))
         #print(grad_V.shape)
         
-        #der_A = np.asarray(np.gradient(A, axis=0))
         der_A = (self.new_A - self.A_field)/dt
         
         #print(der_A.shape)
