@@ -5,6 +5,7 @@ Created on Jul 6, 2022
 '''
 import numpy as np
 from scipy.ndimage import laplace #This function returns the laplacian of things correctly
+import Multiprocessing_Library as mp
 
 class Mesh:
     '''
@@ -143,8 +144,28 @@ class Mesh:
         #self.rho = rho
         return rho, current
     
-    def get_fields_at_point(self, x0, y0, z0):
+    def generate_rho_single_particle(self, particle):
+        rho = np.zeros_like(self.scalar_mesh_0)
+        current = np.zeros_like(self.vector_mesh_0)
+        
+        x, y, z = particle.getPosition()
+        indices, weights = self.find_nearest_neighbors(x, y, z)
+        
+        particle.indices = indices
+        particle.weights = weights
+        
+        for i in range(len(indices)):
+            rho[indices[i,0], indices[i,1], indices[i,2]] += weights[i]*particle.getCharge()
+            for j in range(3):
+                current[j,indices[i,0], indices[i,1], indices[i,2]] += weights[i]*particle.getCharge()*particle.getVelocity()[j]
+        #self.rho = rho
+        return rho, current
+    
+    def get_fields_at_point(self, particles, particle):
+        temp_position = particle.getPosition()
+        x0, y0, z0 = temp_position
         indices, weights = self.find_nearest_neighbors(x0, y0, z0)
+        self.get_new_fields(particles, particle)
         
         point_Efield = np.zeros((3))
         point_Bfield = np.zeros((3))
@@ -153,8 +174,12 @@ class Mesh:
             point_Bfield += self.B_field[:, indices[i,0], indices[i,1], indices[i,2]]*weights[i]
         return point_Efield, point_Bfield
         
-    def get_new_fields(self, particles):
+    def get_new_fields(self, particles, particle):
         rho_new, J_new = self.generate_rho(particles)
+        rho_new1, J_new1 = self.generate_rho_single_particle(particle)
+        
+        rho_new -= rho_new1
+        J_new -= J_new1
         
         last_A = self.A_field
         last_V = self.V_field
@@ -193,7 +218,53 @@ class Mesh:
         self.B_field = B
         
         return E, B
+    
+    def get_new_fields_mp(self, particles, particle):
+        rho_new, J_new = self.generate_rho(particles)
+        rho_new1, J_new1 = self.generate_rho_single_particle(particle)
         
+        rho_new = mp.array_op(rho_new, rho_new1, mode="sub")
+        J_new = mp.array_op(J_new, J_new1, mode="sub")
+        
+        last_A = self.A_field
+        last_V = self.V_field
+        
+        current_A = self.new_A
+        current_V = self.new_V
+        
+        grad2A = self.gradient_squared_A(current_A, edge_type="nearest", cval=0)/self.c**2
+        grad2V = self.gradient_squared_V(current_V, edge_type="nearest", cval=0)/self.c**2
+        
+        #print("c gradV", grad2V.shape)
+        #print(grad2V)
+        
+        A_next = grad2A*self.dt**2*self.c**2 + 2*current_A - last_A + self.mu0*J_new*self.dt**2*self.c**2
+        V_next = grad2V*self.dt**2*self.c**2 + 2*current_V - last_V + self.epsilon0**-1*rho_new*self.dt**2*self.c**2
+        
+        #print("next A", A_next.shape)
+        #print("Next V", V_next.shape)
+        
+        self.A_field = np.copy(self.new_A)
+        self.V_field = np.copy(self.new_V)
+        
+        self.new_A = A_next
+        self.new_V = V_next
+        
+        E = self.get_E(V_next, self.dt)
+        B = self.get_B(A_next)
+        
+        #self.E_list.append(E)
+        #self.B_list.append(B)
+        
+        #self.rho_list.append(rho_new)
+        #self.J_list.append(J_new)
+        
+        self.E_field = E
+        self.B_field = B
+        
+        return E, B
+    
+    
     def get_E(self, V, dt):
         
         grad_V = np.asarray(np.gradient(V))
@@ -236,7 +307,7 @@ class Mesh:
         elif np.shape(E)[0] == 3:
             temparr = np.zeros_like(E[0])
             for i in range(np.shape(E)[0]):
-                temparr += np.gradient(E[i, :, :, :])[i]
+                temparr = mp.array_op(temparr, np.gradient(E[i, :, :, :])[i])
         else:
             temparr = np.zeros_like(E[0])
         

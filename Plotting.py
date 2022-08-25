@@ -10,7 +10,7 @@ import os
 def large_plot(time, t_step_number, particles):
     fig, ax = plt.subplots(2, 3)#+len(particles))
     ax = ax.flatten()
-    t = np.linspace(time[0], time[1], t_step_number+1)
+    t = np.linspace(time[0], time[1], len(particles[0].KineticEnergy))#t_step_number+1)
     fig.tight_layout()
     particle = particles[0]
     

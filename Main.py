@@ -53,7 +53,7 @@ def generateParticles(number, volume): #Generates Particles in the defined recta
             vz = np.sqrt(rand.uniform(0, t - vx**2 - vy**2, dtype=np.float64))
         except:
             pass
-        velocity =  [asarray([0,0,0]), asarray([0,0,0]), asarray([0,0,0])][i%3] #[vx, vy, vz] #Three Velocity [asarray([0,1,0]), asarray([0,-1,0]), asarray([1,0,0])][i%3]
+        velocity =  [asarray([1,0,0]), asarray([0,0,0]), asarray([0,0,0])][i%3] #[vx, vy, vz] #Three Velocity [asarray([0,1,0]), asarray([0,-1,0]), asarray([1,0,0])][i%3]
         
         linearE = 1/2*mass*np.linalg.norm(velocity)**2
         Ke = linearE    #mass*C**2 +                                #For now just KE, so mass*||v||**2
@@ -134,7 +134,7 @@ def update_particle(particle1, particles, mesh, dt, volume, bounce_factor=0.9, M
     Pe = 0
     temp_position = particle1.getPosition()
     if MESH:
-        E_field, B_field = mesh.get_fields_at_point(temp_position[0], temp_position[1], temp_position[2])
+        E_field, B_field = mesh.get_fields_at_point(particles, particle1)
     else:
         for particle2 in particles:
             Scalar_field, B_field, E_field, temp_position, pe = get_forces(Scalar_field, B_field, E_field, bounce_factor, particle1, particle2, temp_position)
@@ -142,14 +142,14 @@ def update_particle(particle1, particles, mesh, dt, volume, bounce_factor=0.9, M
     """
     Fields that are not dependent on other particles must go at this level or in single particle test cases they won't be applied
     """         
-    #B_field += np.asarray([0,0,10]) #Static B-Field Check
+    B_field += np.asarray([0,0,10]) #Static B-Field Check
     #E_field += np.asarray([0,10,0]) #Static E-field Check
     #Scalar_field += -40/np.linalg.norm(particle1.getPosition())**3 *particle1.getPosition()
     #Scalar_field += np.asarray([0,10,0]) #Non E&M field check
     #Scalar_field += -0.5*particle1.getVelocity()**2
     
     #E_field += 100*asarray([0, 0, np.sin(0.1*temp_position[0] - 10*len(particle1.Position)*dt)])
-    B_field += 100*asarray([0, np.sin(0.1*temp_position[0] - 10*len(particle1.Position)*dt), 0])
+    #B_field += 100*asarray([0, np.sin(0.1*temp_position[0] - 10*len(particle1.Position)*dt), 0])
     
     #Pe += -40/np.linalg.norm(particle1.getPosition())
     
@@ -235,12 +235,12 @@ def run_simulation(number_of_particles, volume_bounds, dt, C, epsilon0, mesh_fin
     
     times = []
     total_start_time = tyme.time()
-    for i in range(t_step_number):
+    for i in range(1000):#t_step_number):
         print(i)
         #MultiprocessingStandard(update_particle, particles_for_multi, prints=False)
         start_time = tyme.time()
-        if MESH:
-            update_mesh(mesh, particles)
+        #if MESH:
+        #    update_mesh(mesh, particles)
         for particle in particles:
             update_particle(particle, particles, mesh, dt, volume_bounds, MESH=MESH)
         for particle in particles:
@@ -290,7 +290,7 @@ if __name__ == "__main__":
     
     bounce_factor = .5                                                  #This is how bouncy the walls are. Can be any number but physically real values are between 0 and 1. With 0 being particles instantly stop at walls and 1 being the are perfectly reflected with no energy loss.
     
-    particles, times, total_start_time, total_end_time = run_simulation(number_of_particles, volume_bounds, dt, C, epsilon0) 
+    particles, times, total_start_time, total_end_time = run_simulation(number_of_particles, volume_bounds, dt, C, epsilon0, mesh_fineness=0.1, MESH=True) 
     
     #particles_mesh, times_mesh, total_start_time_mesh, total_end_time_mesh = run_simulation(number_of_particles, volume_bounds, dt, C, epsilon0, mesh_fineness=5.0, MESH=True)
     
@@ -301,7 +301,7 @@ if __name__ == "__main__":
     
     large_plot(time, t_step_number, particles)
      
-    '''   
+       
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
     ax.axes.set_xlim3d(-volume_bounds[0]-.01, volume_bounds[0]+.01)
@@ -318,7 +318,7 @@ if __name__ == "__main__":
         ax.plot(pos[:,0], pos[:,1], pos[:,2], label = "Pos" + str(particle.Index))
     plt.legend()
     plt.show()
-    '''
+    
     
     print("Average Execution time:", np.average(times))
     print("Standard Deviation:", np.std(times))
