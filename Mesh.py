@@ -6,6 +6,7 @@ Created on Jul 6, 2022
 import numpy as np
 from scipy.ndimage import laplace #This function returns the laplacian of things correctly
 import Multiprocessing_Library as mp
+import time
 
 class Mesh:
     '''
@@ -61,7 +62,9 @@ class Mesh:
         self.x = np.linspace(-volume_bounds[0], volume_bounds[0], len_x)
         self.y = np.linspace(-volume_bounds[1], volume_bounds[1], len_y)
         self.z = np.linspace(-volume_bounds[2], volume_bounds[2], len_z)
-    
+        
+        self.get_new_fields_times = []
+        
     def find_nearest_neighbors(self, x0, y0, z0):
         xm = np.abs(self.x-x0).argmin()
         ym = np.abs(self.y-y0).argmin()
@@ -165,7 +168,10 @@ class Mesh:
         temp_position = particle.getPosition()
         x0, y0, z0 = temp_position
         indices, weights = self.find_nearest_neighbors(x0, y0, z0)
-        self.get_new_fields(particles, particle)
+        
+        tyme =  time.time()
+        self.get_new_fields_mp(particles, particle)
+        self.get_new_fields_times.append(time.time() - tyme)
         
         point_Efield = np.zeros((3))
         point_Bfield = np.zeros((3))
@@ -238,8 +244,21 @@ class Mesh:
         #print("c gradV", grad2V.shape)
         #print(grad2V)
         
-        A_next = grad2A*self.dt**2*self.c**2 + 2*current_A - last_A + self.mu0*J_new*self.dt**2*self.c**2
-        V_next = grad2V*self.dt**2*self.c**2 + 2*current_V - last_V + self.epsilon0**-1*rho_new*self.dt**2*self.c**2
+        #A_next = grad2A*self.dt**2*self.c**2 + 2*current_A - last_A + self.mu0*J_new*self.dt**2*self.c**2
+        #V_next = grad2V*self.dt**2*self.c**2 + 2*current_V - last_V + self.epsilon0**-1*rho_new*self.dt**2*self.c**2
+        
+        A_next = np.zeros_like(grad2A)
+        A_next = mp.array_op(A_next, grad2A*self.dt**2*self.c**2, mode="add")
+        A_next = mp.array_op(A_next, 2*current_A, mode="add")
+        A_next = mp.array_op(A_next, last_A, mod="sub")
+        A_next = mp.array_op(A_next, self.mu0*J_new*self.dt**2*self.c**2, mode="add")
+        
+        V_next = np.zeros_like(grad2V)
+        V_next = mp.array_op(V_next, grad2V*self.dt**2*self.c**2, mode="add")
+        V_next = mp.array_op(V_next, 2*current_V, mode="add")
+        V_next = mp.array_op(V_next, last_V, mod="sub")
+        V_next = mp.array_op(V_next, self.epsilon0**-1*rho_new*self.dt**2*self.c**2, mode="add")
+        
         
         #print("next A", A_next.shape)
         #print("Next V", V_next.shape)
@@ -338,3 +357,5 @@ if __name__ == "__main__":
     mesh.get_new_fields(particles)
     print(mesh.getE())
     #print(mesh.rho)
+
+#last best ~ 4.2s avg per step 

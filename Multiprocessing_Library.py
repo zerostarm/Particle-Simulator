@@ -9,8 +9,9 @@ import numpy as np
 
 def add(lower, size, a, b, c):
         upper = int(lower + size)
-        for i in range(lower, upper):
-            c[i] = a[i] + b[i]
+        #for i in range(lower, upper):
+        #    c[i] = a[i] + b[i]
+        c[lower:upper] = a[lower:upper] + b[lower:upper]
         return c
 
 def sub(lower, size, a, b, c):
@@ -59,6 +60,8 @@ def array_op(array1, array2, mode="add"):
         f = mul
     elif mode == "div":
         f = div
+    else:
+        pass
     
     with multiprocessing.Pool() as pool:
         pool.starmap(f, vals)
@@ -66,10 +69,11 @@ def array_op(array1, array2, mode="add"):
     return np.reshape(np.asarray(array3_m), array1.shape) 
     
 
+
 if __name__ == "__main__":
-    shape = (3, 4, 4, 4)
+    shape = (3, 100, 100, 100)
     array1 = np.ones(shape)*100
-    array2 = np.asarray(range(0, 192))#np.ones(shape)
+    array2 = np.asarray(range(0, 3000000))#np.ones(shape)
     
     array2 = np.reshape(array2, shape)
     
