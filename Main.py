@@ -144,11 +144,14 @@ if __name__ == "__main__":
         """
         Fields that are not dependent on other particles must go at this level or in single particle test cases they won't be applied
         """         
-        B_field += np.asarray([0,0,10]) #Static B-Field Check
-        #E_field += np.asarray([0,10,0]) #Static E-field Check
+        #B_field += np.asarray([0,0,100]) #Static B-Field Check
+        E_field += np.asarray([0,0,1]) #Static E-field Check
         #Scalar_field += -40/np.linalg.norm(particle1.getPosition())**3 *particle1.getPosition()
         #Scalar_field += np.asarray([0,10,0]) #Non E&M field check
         #Scalar_field += -0.5*particle1.getVelocity()**2
+        x,y,z = temp_position
+        R = 10
+        B_field += 100*np.asarray([-y/R, x/R, 0])
         
         #E_field += 100*asarray([0, 0, np.sin(0.1*temp_position[0] - 10*len(particle1.Position)*dt)])
         #B_field += 100*asarray([0, np.sin(0.1*temp_position[0] - 10*len(particle1.Position)*dt), 0])
@@ -228,8 +231,10 @@ if __name__ == "__main__":
     def run_simulation(number_of_particles, volume_bounds, dt, C, epsilon0, mesh_fineness = 5.0, MESH=False):
         particles = generateParticles(number_of_particles, volume_bounds)   #This generates particles, at random positions in the volume box, and low random velocities. The charge alternates between +1, and -1
         
-        mesh = Mesh(mesh_fineness, volume_bounds, dt, c=C, epsilon0=epsilon0)
-        
+        if MESH:
+            mesh = Mesh(mesh_fineness, volume_bounds, dt, c=C, epsilon0=epsilon0)
+        else:
+            mesh = []
         
         #particles_for_multi = []
         #for particle in particles:
@@ -237,7 +242,7 @@ if __name__ == "__main__":
         
         times = []
         total_start_time = tyme.time()
-        for i in range(2):#t_step_number):
+        for i in range(t_step_number):
             print(i)
             #MultiprocessingStandard(update_particle, particles_for_multi, prints=False)
             start_time = tyme.time()
@@ -282,17 +287,17 @@ if __name__ == "__main__":
     """
     Defining simulation constants
     """
-    volume_bounds = [10,10,10]                                          #Assumes a box centered on [0,0,0] with walls positioned at [+-10,0,0], [0,+-10,0], and [0,0,+-10] 
+    volume_bounds = [100,100,100]                                          #Assumes a box centered on [0,0,0] with walls positioned at [+-10,0,0], [0,+-10,0], and [0,0,+-10] 
     number_of_particles = 1                                             #Number of particles
     
-    time = [0,100]                                                       #Time bounds. These aren't necessarily needed if you define dt but it's useful for plotting stuff
-    t_step_number = 10000                                                #Number of time steps. Always gotta define this or else things will break.
+    time = [0,1000]                                                       #Time bounds. These aren't necessarily needed if you define dt but it's useful for plotting stuff
+    t_step_number = 100000                                                #Number of time steps. Always gotta define this or else things will break.
     
     dt = (time[-1])/t_step_number                                       #The delta of time. I usually define it as (time[-1] - time[0])/t_step_number 
     
     bounce_factor = .5                                                  #This is how bouncy the walls are. Can be any number but physically real values are between 0 and 1. With 0 being particles instantly stop at walls and 1 being the are perfectly reflected with no energy loss.
     
-    particles, times, total_start_time, total_end_time = run_simulation(number_of_particles, volume_bounds, dt, C, epsilon0, mesh_fineness=0.1, MESH=True) 
+    particles, times, total_start_time, total_end_time = run_simulation(number_of_particles, volume_bounds, dt, C, epsilon0, mesh_fineness=0.1, MESH=False) 
     
     #particles_mesh, times_mesh, total_start_time_mesh, total_end_time_mesh = run_simulation(number_of_particles, volume_bounds, dt, C, epsilon0, mesh_fineness=5.0, MESH=True)
     

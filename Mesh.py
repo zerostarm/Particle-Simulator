@@ -124,6 +124,47 @@ class Mesh:
         
         return indices, weights
     
+    def find_nearest_neighbors_better(self, x0, y0, z0):
+        i = np.absolute(np.floor(x0/self.dx))
+        j = np.absolute(np.floor(y0/self.dy))
+        k = np.absolute(np.floor(z0/self.dz))
+        
+        i_plus = np.absolute(np.ceil(x0/self.dx)) 
+        j_plus = np.absolute(np.ceil(y0/self.dy))
+        k_plus = np.absolute(np.ceil(z0/self.dz))
+        
+        xi = self.x[0] + i*self.dx
+        yj = self.y[0] + j*self.dy
+        zk = self.z[0] + k*self.dz
+        
+        dx = self.dx
+        dy = self.dy
+        dz = self.dz
+        
+        A0 = (xi + dx - x0)*(yj + dy - y0)*(zk + dz - z0)
+        A1 = (x0 - xi)*(yj + dy - y0)*(zk + dz - z0)
+        A2 = (x0 - xi)*(y0 - yj)*(zk + dz - z0)
+        A3 = (x0 - xi)*(y0 - yj)*(z0 - zk)
+        A4 = (xi + dx - x0)*(y0 - yj)*(zk + dz - z0)
+        A5 = (xi + dx - x0)*(y0 - yj)*(z0 - zk)
+        A6 = (xi + dx - x0)*(yj + dy - y0)*(z0 - zk)
+        A7 = (x0 - xi)*(yj + dy - y0)*(z0 - zk)
+        At = dx*dy*dz
+        
+        weights = np.asarray([A0, A1, A2, A3, A4, A5, A6, A7])/At
+        
+        indices = [[i, j, k],
+                   [i_plus, j, k],
+                   [i_plus, j_plus, k],
+                   [i_plus, j_plus, k_plus],
+                   [i, j_plus, k],
+                   [i, j_plus, k_plus],
+                   [i, j, k_plus],
+                   [i_plus, j, k_plus]]
+        
+        
+        return indices, weights
+    
     def generate_rho(self, particles):
         """
         Will take in particles and generate a rho map 
@@ -135,7 +176,7 @@ class Mesh:
         current = np.zeros_like(self.vector_mesh_0)
         for particle in particles:
             x, y, z = particle.getPosition()
-            indices, weights = self.find_nearest_neighbors(x, y, z)
+            indices, weights = self.find_nearest_neighbors_better(x, y, z)
             
             particle.indices = indices
             particle.weights = weights
@@ -152,7 +193,7 @@ class Mesh:
         current = np.zeros_like(self.vector_mesh_0)
         
         x, y, z = particle.getPosition()
-        indices, weights = self.find_nearest_neighbors(x, y, z)
+        indices, weights = self.find_nearest_neighbors_better(x, y, z)
         
         particle.indices = indices
         particle.weights = weights
@@ -167,10 +208,10 @@ class Mesh:
     def get_fields_at_point(self, particles, particle):
         temp_position = particle.getPosition()
         x0, y0, z0 = temp_position
-        indices, weights = self.find_nearest_neighbors(x0, y0, z0)
+        indices, weights = self.find_nearest_neighbors_better(x0, y0, z0)
         
         tyme =  time.time()
-        self.get_new_fields_mp(particles, particle)
+        self.get_new_fields(particles, particle)
         self.get_new_fields_times.append(time.time() - tyme)
         
         point_Efield = np.zeros((3))
