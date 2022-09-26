@@ -1,5 +1,5 @@
 '''
-Created on May 5, 2020
+Created on Sept 14, 2020
 
 @author: Stephen
 '''
@@ -8,7 +8,7 @@ from numpy import asarray
 import numpy as np
 
 class Particle:
-    def __init__(self, index, mass, charge, radius, position, velocity, Ke, acceleration, Pe=0):
+    def __init__(self, index, mass, charge, position, velocity, radius=0, Ke=0, acceleration=[0,0,0], Pe=0):
         self.Index = index
         self.Mass = mass
         self.Charge = charge
