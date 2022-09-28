@@ -74,7 +74,7 @@ def update_particle(particle1, mesh):
     
     Scalar_field = np.zeros(3)
     temp_position = particle1.getPosition()
-    E_field, B_field, Scalar_field = mesh.get_fields_at_point(particles, particle1)
+    E_field, B_field, Scalar_field = mesh.get_fields_at_point_scipy(particles, particle1)
     
     #x,y,z = temp_position
     #R = 10

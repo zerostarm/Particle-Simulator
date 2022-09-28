@@ -7,6 +7,8 @@ import numpy as np
 from scipy.ndimage import laplace #This function returns the laplacian of things correctly
 import Multiprocessing_Library as mp
 import time
+import scipy.interpolate
+from scipy.interpolate import NearestNDInterpolator
 
 class Mesh:
     '''
@@ -51,6 +53,9 @@ class Mesh:
         self.particles = particles
         self.bounce_factor = bounce_factor
         self.volume_bounds = volume_bounds
+        
+        self.meshgrid = np.meshgrid(self.x, self.y, self.z)
+        self.xx, self.yy, self.zz = self.meshgrid
         
         self.Standard_Test_fields()
         #self.test_psi()
@@ -148,6 +153,35 @@ class Mesh:
             point_Scalarfield += self.Scalar_field[:, indices[i,0], indices[i,1], indices[i,2]]*weights[i]
         return point_Efield, point_Bfield, point_Scalarfield
     
+    def get_fields_at_point_scipy(self, particles, particle):
+        temp_position = particle.getPosition()
+        x0, y0, z0 = temp_position
+        
+        interpolator_E_field = np.zeros((3), dtype=object) 
+        interpolator_B_field = np.zeros((3), dtype=object)
+        interpolator_Scalar_field = np.zeros((3), dtype=object)
+        
+        point_Efield = np.zeros((3))
+        point_Bfield = np.zeros((3))
+        point_Scalarfield = np.zeros((3))
+        print(np.shape(self.E_field[0]))
+        points = list(zip(self.x, self.y, self.z))
+        print(np.shape(points))
+        
+        test = NearestNDInterpolator(points, self.E_field[0])
+        print(test(x0, y0, z0))
+        interpolator_E_field[0] = NearestNDInterpolator(points, self.E_field[0])
+        interpolator_E_field[1] = NearestNDInterpolator(points, self.E_field[1])
+        interpolator_E_field[2] = NearestNDInterpolator(points, self.E_field[2])
+        print(interpolator_E_field[0])
+        print(interpolator_E_field[0](x0, y0, z0))
+        print(x0, y0, z0)
+        point_Efield[0] = interpolator_E_field[0](x0, y0, z0)
+        point_Efield[1] = interpolator_E_field[1](x0, y0, z0)
+        point_Efield[2] = interpolator_E_field[2](x0, y0, z0)
+        
+        return point_Efield, point_Bfield, point_Scalarfield
+        
     def getE(self):
         return self.E_field
     def getB(self):
